@@ -30,7 +30,7 @@ def transform_date(text):
     text = str(text)
     d = text[0:10]
     return d
-    
+
 def start_process():
     print(" INICIO EL PROCESO!")
 
@@ -41,7 +41,7 @@ def load_products():
     print(f" INICIO LOAD PRODUCTS")
     dbconnect = get_connect_mongo()
     dbname=dbconnect["retail_db"]
-    collection_name = dbname["products"] 
+    collection_name = dbname["products"]
     products = collection_name.find({})
     products_df = DataFrame(products)
     dbconnect.close()
@@ -69,7 +69,7 @@ def load_products():
 
         job = client.load_table_from_dataframe(
             products_df, table_id, job_config=job_config
-        )  
+        )
         job.result()  # Wait for the job to complete.
 
         table = client.get_table(table_id)  # Make an API request.
@@ -78,7 +78,7 @@ def load_products():
                 table.num_rows, len(table.schema), table_id
             )
         )
-    else : 
+    else :
         print('alerta no hay registros en la tabla productos')
 
 
@@ -86,8 +86,8 @@ def load_orders():
     print("INICIO LOAD ORDERS")
     dbconnect = get_connect_mongo()
     dbname=dbconnect["retail_db"]
-    collection_name = dbname["orders"] 
-    orders = collection_name.find({})  
+    collection_name = dbname["orders"]
+    orders = collection_name.find({})
     orders_df = DataFrame(orders)
     dbconnect.close()
 
@@ -112,7 +112,7 @@ def load_orders():
 
         job = client.load_table_from_dataframe(
             orders_df, table_id, job_config=job_config
-        )  
+        )
         job.result()  # Wait for the job to complete.
 
         table = client.get_table(table_id)  # Make an API request.
@@ -121,14 +121,14 @@ def load_orders():
                 table.num_rows, len(table.schema), table_id
             )
         )
-    else : 
+    else :
         print('alerta no hay registros en la tabla orders')
 
 
 with DAG(
     dag_id="load_project",
-    schedule="20 04 * * *", 
-    start_date=days_ago(2), 
+    schedule="20 04 * * *",
+    start_date=days_ago(2),
     default_args=default_args
 ) as dag:
     step_start = PythonOperator(
