@@ -95,7 +95,7 @@ def load_orders():
     orders_df['order_date']  = orders_df['order_date'].map(transform_date)
     orders_df['order_date'] = pd.to_datetime(orders_df['order_date'], format='%Y-%m-%d').dt.date
     orders_rows=len(orders_df)
-    if orders_rows>0 :
+    if orders_rows>0:
         client = bigquery.Client(project='my-project-411522')
         table_id =  "my-project-411522.dep_raw.orders"
         job_config = bigquery.LoadJobConfig(
