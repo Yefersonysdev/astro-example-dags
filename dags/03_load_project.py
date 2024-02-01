@@ -1,6 +1,8 @@
 from airflow import DAG
 from airflow.operators.python import PythonOperator
+from airflow.operators.python import BranchPythonOperator
 from airflow.models.connection import Connection
+from airflow.utils.trigger_rule import TriggerRule
 from time import time_ns
 from datetime import datetime , timedelta
 from airflow.utils.dates import days_ago
@@ -9,6 +11,7 @@ from pymongo import MongoClient
 from pandas import DataFrame
 from google.cloud import bigquery
 import pandas as pd
+import numpy as np
 
 default_args = {
     'owner': 'Datapath',
@@ -284,6 +287,74 @@ def load_departments():
     else :
         print('alerta no hay registros en la tabla departments')
 
+def master():
+    client = bigquery.Client(project="my-project-411522")
+    sql = """
+    SELECT *
+    FROM `my-project-411522.dep_raw.order_items`
+    """
+    m_order_items_df = client.query(sql).to_dataframe()
+    client = bigquery.Client()
+    sql_2 = """
+    SELECT *
+    FROM `my-project-411522.dep_raw.orders`
+    """
+    m_orders_df = client.query(sql_2).to_dataframe()
+    df_join = m_orders_df.merge(m_order_items_df, left_on='order_id', right_on='order_item_order_id', how='inner')
+    df_master=df_join[[ 'order_id', 'order_date_x', 'order_customer_id','order_status',  'order_item_id',
+       'order_item_order_id', 'order_item_product_id', 'order_item_quantity',
+       'order_item_subtotal', 'order_item_product_price']]
+    df_master=df_master.rename(columns={"order_date_x":"order_date"})
+    df_master['order_status_group']  = df_master['order_status'].map(get_group_status)
+    df_master['order_date'] = df_master['order_date'].astype(str)
+    df_master['order_date'] = pd.to_datetime(df_master['order_date'], format='%Y-%m-%d').dt.date
+
+    #DESAFIO 02
+    headers_files = {
+    'tipocambio':["fecha","compra","venta","nan"]}
+    dwn_url_tipcambio='https://www.sunat.gob.pe/a/txt/tipoCambio.txt'
+    df = pd.read_csv(dwn_url_tipcambio, names=headers_files['tipocambio'], sep='|')
+    list_t=df.values.tolist()
+    vari=list_t[0][1]
+    df_master["order_item_subtotal_mn"] = df_master["order_item_subtotal"].apply( lambda x:x*vari)
+
+    df_master_rows=len(df_master)
+    if df_master_rows>0 :
+        client = bigquery.Client()
+
+        table_id =  "my-project-411522.dep_raw.master_order"
+        job_config = bigquery.LoadJobConfig(
+            schema=[
+                bigquery.SchemaField("order_id", bigquery.enums.SqlTypeNames.INTEGER),
+                bigquery.SchemaField("order_date", bigquery.enums.SqlTypeNames.DATE),
+                bigquery.SchemaField("order_customer_id", bigquery.enums.SqlTypeNames.INTEGER),
+                bigquery.SchemaField("order_status", bigquery.enums.SqlTypeNames.STRING),
+                bigquery.SchemaField("order_item_id", bigquery.enums.SqlTypeNames.INTEGER),
+                bigquery.SchemaField("order_item_order_id", bigquery.enums.SqlTypeNames.INTEGER),
+                bigquery.SchemaField("order_item_product_id", bigquery.enums.SqlTypeNames.INTEGER),
+                bigquery.SchemaField("order_item_quantity", bigquery.enums.SqlTypeNames.INTEGER),
+                bigquery.SchemaField("order_item_subtotal", bigquery.enums.SqlTypeNames.FLOAT),
+                bigquery.SchemaField("order_item_product_price", bigquery.enums.SqlTypeNames.FLOAT),
+                bigquery.SchemaField("order_status_group", bigquery.enums.SqlTypeNames.STRING),
+            ],
+            write_disposition="WRITE_TRUNCATE",
+        )
+
+
+        job = client.load_table_from_dataframe(
+            df_master, table_id, job_config=job_config
+        )
+        job.result()  # Wait for the job to complete.
+
+        table = client.get_table(table_id)  # Make an API request.
+        print(
+            "Loaded {} rows and {} columns to {}".format(
+                table.num_rows, len(table.schema), table_id
+            )
+        )
+    else :
+        print('alerta no hay registros en la tabla order_items')
+
 
 
 with DAG(
@@ -325,6 +396,12 @@ with DAG(
     step_load_departments = PythonOperator(
         task_id='load_departments_id',
         python_callable=load_departments,
+        dag=dag
+    )
+    step_capa_master = PythonOperator(
+        task_id='capa_master_id',
+        python_callable=master,
+        trigger_rule=TriggerRule.ALL_DONE,
         dag=dag
     )
     step_end = PythonOperator(
