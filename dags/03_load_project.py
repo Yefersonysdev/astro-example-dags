@@ -27,15 +27,15 @@ def transform_date(text):
     d = text[0:10]
     return d
 
-# def check_day():
-#     today = date.today()
-#     if today.weekday() == 0:
-#         return 'load_departments_id'
-#     else:
-#         return 'not_monday_id'
+def check_day():
+    today = date.today()
+    if today.weekday() == 0:
+        return 'load_departments_id'
+    else:
+        return 'not_monday_id'
 
-# def not_monday():
-#     print("Hoy no es lunes")
+def not_monday():
+    print("Hoy no es lunes")
 
 def get_connect_mongo():
 
@@ -44,10 +44,10 @@ def get_connect_mongo():
 
     return client
 
-# def get_connect_myself_mongo():
-#     CONNECTION_STRING ="mongodb+srv://mongobd:9n25X1Ui7Ad1D1Fi@cluster0.kjdo8na.mongodb.net/?retryWrites=true&w=majority"
-#     client = MongoClient(CONNECTION_STRING)
-#     return client
+def get_connect_myself_mongo():
+    CONNECTION_STRING ="mongodb+srv://mongobd:9n25X1Ui7Ad1D1Fi@cluster0.kjdo8na.mongodb.net/?retryWrites=true&w=majority"
+    client = MongoClient(CONNECTION_STRING)
+    return client
 
 def get_group_status(text):
     text = str(text)
@@ -240,14 +240,14 @@ def load_customers():
         )
     else :
         print('alerta no hay registros en la tabla customers')
-    # #Tarea N 03
-    # customers_df.reset_index(inplace=False)
-    # df_to_dict = customers_df.to_dict("records")
-    # connection = get_connect_myself_mongo()
-    # dbname= connection['retail_db']
-    # dbname["customers"].drop()
-    # dbname["customers"].insert_many(df_to_dict)
-    # connection.close()
+    #Tarea N 03
+    customers_df.reset_index(inplace=False)
+    df_to_dict = customers_df.to_dict("records")
+    connection = get_connect_myself_mongo()
+    dbname= connection['retail_db']
+    dbname["customers"].drop()
+    dbname["customers"].insert_many(df_to_dict)
+    connection.close()
 
 
 
@@ -325,16 +325,16 @@ def load_departments():
         print('alerta no hay registros en la tabla departments')
 
 def master_capa():
-    client = bigquery.Client(project="my-project-411522")
+    client = bigquery.Client(project='my-project-411522')
     sql = """
-    SELECT *
-    FROM `my-project-411522.dep_raw.order_items`
+        SELECT *
+        FROM `my-project-411522.dep_raw.order_items`
     """
     m_order_items_df = client.query(sql).to_dataframe()
     client = bigquery.Client()
     sql_2 = """
-    SELECT *
-    FROM `my-project-411522.dep_raw.orders`
+        SELECT *
+        FROM `my-project-411522.dep_raw.orders`
     """
     m_orders_df = client.query(sql_2).to_dataframe()
     df_join = m_orders_df.merge(m_order_items_df, left_on='order_id', right_on='order_item_order_id', how='inner')
@@ -429,6 +429,17 @@ with DAG(
         python_callable=load_categories,
         dag=dag
     )
+    step_load_day = BranchPythonOperator(
+        task_id='check_monday_id',
+        python_callable=check_day,
+        provide_context=True,
+        dag=dag
+    )
+    step_load_not_monday = PythonOperator(
+        task_id='not_monday_id',
+        python_callable=not_monday,
+        dag=dag
+    )
     step_load_departments = PythonOperator(
         task_id='load_departments_id',
         python_callable=load_departments,
@@ -437,6 +448,7 @@ with DAG(
     step_master_capa = PythonOperator(
         task_id='capa_master_id',
         python_callable=master_capa,
+        trigger_rule=TriggerRule.ALL_DONE,
         dag=dag
     )
     step_end = PythonOperator(
@@ -444,4 +456,4 @@ with DAG(
         python_callable=end_process,
         dag=dag
     )
-    step_start>>step_load_products>>step_load_orders>>step_load_order_items>>step_load_customers>>step_load_categories>>step_load_departments>>step_master_capa>>step_end
+    step_start>>[step_load_products,step_load_orders,step_load_order_items,step_load_customers,step_load_categories]>>step_load_day>>[step_load_departments,step_load_not_monday]>>step_master_capa>>step_end
