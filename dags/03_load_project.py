@@ -27,15 +27,15 @@ def transform_date(text):
     d = text[0:10]
     return d
 
-def check_day():
-    today = date.today()
-    if today.weekday() == 0:
-        return 'load_departments_id'
-    else:
-        return 'not_monday_id'
+# def check_day():
+#     today = date.today()
+#     if today.weekday() == 0:
+#         return 'load_departments_id'
+#     else:
+#         return 'not_monday_id'
 
-def not_monday():
-    print("Hoy no es lunes")
+# def not_monday():
+#     print("Hoy no es lunes")
 
 def get_connect_mongo():
 
@@ -44,10 +44,10 @@ def get_connect_mongo():
 
     return client
 
-def get_connect_myself_mongo():
-    CONNECTION_STRING ="mongodb+srv://mongobd:9n25X1Ui7Ad1D1Fi@cluster0.kjdo8na.mongodb.net/?retryWrites=true&w=majority"
-    client = MongoClient(CONNECTION_STRING)
-    return client
+# def get_connect_myself_mongo():
+#     CONNECTION_STRING ="mongodb+srv://mongobd:9n25X1Ui7Ad1D1Fi@cluster0.kjdo8na.mongodb.net/?retryWrites=true&w=majority"
+#     client = MongoClient(CONNECTION_STRING)
+#     return client
 
 def get_group_status(text):
     text = str(text)
@@ -240,15 +240,14 @@ def load_customers():
         )
     else :
         print('alerta no hay registros en la tabla customers')
-
-    #Tarea N 03
-    customers_df.reset_index(inplace=False)
-    df_to_dict = customers_df.to_dict("records")
-    connection = get_connect_myself_mongo()
-    dbname= connection['retail_db']
-    dbname["customers"].drop()
-    dbname["customers"].insert_many(df_to_dict)
-    connection.close()
+    # #Tarea N 03
+    # customers_df.reset_index(inplace=False)
+    # df_to_dict = customers_df.to_dict("records")
+    # connection = get_connect_myself_mongo()
+    # dbname= connection['retail_db']
+    # dbname["customers"].drop()
+    # dbname["customers"].insert_many(df_to_dict)
+    # connection.close()
 
 
 
@@ -348,8 +347,7 @@ def master_capa():
     df_master['order_date'] = pd.to_datetime(df_master['order_date'], format='%Y-%m-%d').dt.date
 
     #DESAFIO 02
-    headers_files = {
-    'tipocambio':["fecha","compra","venta","nan"]}
+    headers_files = {'tipocambio':["fecha","compra","venta","nan"]}
     dwn_url_tipcambio='https://www.sunat.gob.pe/a/txt/tipoCambio.txt'
     df = pd.read_csv(dwn_url_tipcambio, names=headers_files['tipocambio'], sep='|')
     list_t=df.values.tolist()
@@ -372,6 +370,7 @@ def master_capa():
                 bigquery.SchemaField("order_item_product_id", bigquery.enums.SqlTypeNames.INTEGER),
                 bigquery.SchemaField("order_item_quantity", bigquery.enums.SqlTypeNames.INTEGER),
                 bigquery.SchemaField("order_item_subtotal", bigquery.enums.SqlTypeNames.FLOAT),
+                bigquery.SchemaField("order_item_subtotal_mn", bigquery.enums.SqlTypeNames.FLOAT),
                 bigquery.SchemaField("order_item_product_price", bigquery.enums.SqlTypeNames.FLOAT),
                 bigquery.SchemaField("order_status_group", bigquery.enums.SqlTypeNames.STRING),
             ],
