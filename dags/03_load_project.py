@@ -302,8 +302,8 @@ def master_capa():
     m_orders_df = client.query(sql_2).to_dataframe()
     df_join = m_orders_df.merge(m_order_items_df, left_on='order_id', right_on='order_item_order_id', how='inner')
     df_master=df_join[[ 'order_id', 'order_date_x', 'order_customer_id','order_status',  'order_item_id',
-       'order_item_order_id', 'order_item_product_id', 'order_item_quantity',
-       'order_item_subtotal', 'order_item_product_price']]
+    'order_item_order_id', 'order_item_product_id', 'order_item_quantity',
+    'order_item_subtotal', 'order_item_product_price']]
     df_master=df_master.rename(columns={"order_date_x":"order_date"})
     df_master['order_status_group']  = df_master['order_status'].map(get_group_status)
     df_master['order_date'] = df_master['order_date'].astype(str)
