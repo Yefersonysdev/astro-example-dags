@@ -79,7 +79,7 @@ def load_products():
             )
         )
     else :
-        print('alerta no hay registros en la tabla productos')
+        print('alerta no hay registros en la tabla productos .')
 
 
 def load_orders():
