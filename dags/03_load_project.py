@@ -437,7 +437,6 @@ with DAG(
     step_master_capa = PythonOperator(
         task_id='capa_master_id',
         python_callable=master_capa,
-        trigger_rule=TriggerRule.ALL_DONE,
         dag=dag
     )
     step_end = PythonOperator(
@@ -445,4 +444,4 @@ with DAG(
         python_callable=end_process,
         dag=dag
     )
-    step_start>>[step_load_products>>step_load_orders>>step_load_order_items>>step_load_customers>>step_load_categories]>>step_load_departments>>step_master_capa>>step_end
+    step_start>>step_load_products>>step_load_orders>>step_load_order_items>>step_load_customers>>step_load_categories>>step_load_departments>>step_master_capa>>step_end
