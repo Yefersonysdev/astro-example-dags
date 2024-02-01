@@ -325,13 +325,13 @@ def load_departments():
         print('alerta no hay registros en la tabla departments')
 
 def master_capa():
+    print("master")
     client = bigquery.Client(project='my-project-411522')
     sql = """
         SELECT *
         FROM `my-project-411522.dep_raw.order_items`
     """
     m_order_items_df = client.query(sql).to_dataframe()
-    client = bigquery.Client()
     sql_2 = """
         SELECT *
         FROM `my-project-411522.dep_raw.orders`
@@ -345,14 +345,15 @@ def master_capa():
     df_master['order_status_group']  = df_master['order_status'].map(get_group_status)
     df_master['order_date'] = df_master['order_date'].astype(str)
     df_master['order_date'] = pd.to_datetime(df_master['order_date'], format='%Y-%m-%d').dt.date
-
-    #DESAFIO 02
-    headers_files = {'tipocambio':["fecha","compra","venta","nan"]}
+    print("DESAFIO 02")
+    headers_files = {
+        'tipocambio':["fecha","compra","venta","nan"]
+        }
     dwn_url_tipcambio='https://www.sunat.gob.pe/a/txt/tipoCambio.txt'
     df = pd.read_csv(dwn_url_tipcambio, names=headers_files['tipocambio'], sep='|')
     list_t=df.values.tolist()
     vari=list_t[0][1]
-    df_master["order_item_subtotal_mn"] = df_master["order_item_subtotal"].apply( lambda x:x*vari)
+    df_master['order_item_subtotal_mn'] = df_master['order_item_subtotal'].apply(lambda x: x*vari)
 
     df_master_rows=len(df_master)
     if df_master_rows>0 :
