@@ -356,8 +356,7 @@ def master_capa():
 
     df_master_rows=len(df_master)
     if df_master_rows>0 :
-        client = bigquery.Client(project="my-project-411522")
-
+        client = bigquery.Client(project='my-project-411522')
         table_id =  "my-project-411522.dep_raw.master_order"
         job_config = bigquery.LoadJobConfig(
             schema=[
@@ -446,4 +445,4 @@ with DAG(
         python_callable=end_process,
         dag=dag
     )
-    step_start>>step_load_products>>step_load_orders>>step_load_order_items>>step_load_customers>>step_load_categories>>step_load_departments>>step_master_capa>>step_end
+    step_start>>[step_load_products>>step_load_orders>>step_load_order_items>>step_load_customers>>step_load_categories]>>step_load_departments>>step_master_capa>>step_end
