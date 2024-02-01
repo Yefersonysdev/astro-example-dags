@@ -4,7 +4,7 @@ from airflow.operators.python import BranchPythonOperator
 from airflow.models.connection import Connection
 from airflow.utils.trigger_rule import TriggerRule
 from time import time_ns
-from datetime import datetime , timedelta
+from datetime import datetime , timedelta, date
 from airflow.utils.dates import days_ago
 import os
 from pymongo import MongoClient
@@ -27,12 +27,39 @@ def transform_date(text):
     d = text[0:10]
     return d
 
+def check_day():
+    today = date.today()
+    if today.weekday() == 0:
+        return 'load_departments_id'
+    else:
+        return 'not_monday_id'
+
+def not_monday():
+    print("Hoy no es lunes")
+
 def get_connect_mongo():
 
     CONNECTION_STRING ="mongodb+srv://atlas:T6.HYX68T8Wr6nT@cluster0.enioytp.mongodb.net/?retryWrites=true&w=majority"
     client = MongoClient(CONNECTION_STRING)
 
     return client
+
+def get_connect_myself_mongo():
+    CONNECTION_STRING ="mongodb+srv://mongobd:9n25X1Ui7Ad1D1Fi@cluster0.kjdo8na.mongodb.net/?retryWrites=true&w=majority"
+    client = MongoClient(CONNECTION_STRING)
+    return client
+
+def get_group_status(text):
+    text = str(text)
+    if text =='CLOSED':
+        d='END'
+    elif text =='COMPLETE':
+        d='END'
+    else :
+        d='TRANSIT'
+    return d
+
+
 
 def start_process():
     print(" INICIO EL PROCESO!")
@@ -82,7 +109,7 @@ def load_products():
             )
         )
     else :
-        print('alerta no hay registros en la tabla productos .')
+        print('alerta no hay registros en la tabla productos.')
 
 
 def load_orders():
@@ -214,6 +241,17 @@ def load_customers():
     else :
         print('alerta no hay registros en la tabla customers')
 
+    #Tarea N 03
+    customers_df.reset_index(inplace=False)
+    df_to_dict = customers_df.to_dict("records")
+    connection = get_connect_myself_mongo()
+    dbname= connection['retail_db']
+    dbname["customers"].drop()
+    dbname["customers"].insert_many(df_to_dict)
+    connection.close()
+
+
+
 def load_categories():
     print("INICIO LOAD CATEGORIES")
     dbconnect = get_connect_mongo()
@@ -320,7 +358,7 @@ def master_capa():
 
     df_master_rows=len(df_master)
     if df_master_rows>0 :
-        client = bigquery.Client()
+        client = bigquery.Client(project="my-project-411522")
 
         table_id =  "my-project-411522.dep_raw.master_order"
         job_config = bigquery.LoadJobConfig(
