@@ -287,7 +287,7 @@ def load_departments():
     else :
         print('alerta no hay registros en la tabla departments')
 
-def master():
+def master_capa():
     client = bigquery.Client(project="my-project-411522")
     sql = """
     SELECT *
@@ -398,9 +398,9 @@ with DAG(
         python_callable=load_departments,
         dag=dag
     )
-    step_capa_master = PythonOperator(
+    step_master_capa = PythonOperator(
         task_id='capa_master_id',
-        python_callable=master,
+        python_callable=master_capa,
         trigger_rule=TriggerRule.ALL_DONE,
         dag=dag
     )
@@ -409,4 +409,4 @@ with DAG(
         python_callable=end_process,
         dag=dag
     )
-    step_start>>step_load_products>>step_load_orders>>step_load_order_items>>step_load_customers>>step_load_categories>>step_load_departments>>step_capa_master>>step_end
+    step_start>>step_load_products>>step_load_orders>>step_load_order_items>>step_load_customers>>step_load_categories>>step_load_departments>>step_master_capa>>step_end
