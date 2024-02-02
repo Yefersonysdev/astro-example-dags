@@ -357,7 +357,6 @@ def master_capa():
 
     df_master_rows=len(df_master)
     if df_master_rows>0 :
-        client = bigquery.Client(project='my-project-411522')
         table_id =  "my-project-411522.dep_raw.master_order"
         job_config = bigquery.LoadJobConfig(
             schema=[
